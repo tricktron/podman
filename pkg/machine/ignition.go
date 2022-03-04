@@ -291,9 +291,7 @@ func getDirs(usrName string) []Directory {
 }
 
 func getFiles(usrName string) []File {
-	var (
-		files []File
-	)
+	files := make([]File, 0)
 
 	lingerExample := `[Unit]
 Description=A systemd user unit demo
@@ -312,7 +310,7 @@ machine_enabled=true
 	delegateConf := `[Service]
 Delegate=memory pids cpu io
 `
-	subUID := `%s:100000:65536`
+	subUID := `%s:100000:1000000`
 
 	// Add a fake systemd service to get the user socket rolling
 	files = append(files, File{
@@ -347,39 +345,24 @@ Delegate=memory pids cpu io
 		},
 	})
 
-	// Setup /etc/subuid
-	files = append(files, File{
-		Node: Node{
-			Group:     getNodeGrp("root"),
-			Path:      "/etc/subuid",
-			User:      getNodeUsr("root"),
-			Overwrite: boolToPtr(true),
-		},
-		FileEmbedded1: FileEmbedded1{
-			Append: nil,
-			Contents: Resource{
-				Source: encodeDataURLPtr(fmt.Sprintf(subUID, usrName)),
+	// Setup /etc/subuid and /etc/subgid
+	for _, sub := range []string{"/etc/subuid", "/etc/subgid"} {
+		files = append(files, File{
+			Node: Node{
+				Group:     getNodeGrp("root"),
+				Path:      sub,
+				User:      getNodeUsr("root"),
+				Overwrite: boolToPtr(true),
 			},
-			Mode: intToPtr(0744),
-		},
-	})
-
-	// Setup /etc/subgid
-	files = append(files, File{
-		Node: Node{
-			Group:     getNodeGrp("root"),
-			Path:      "/etc/subgid",
-			User:      getNodeUsr("root"),
-			Overwrite: boolToPtr(true),
-		},
-		FileEmbedded1: FileEmbedded1{
-			Append: nil,
-			Contents: Resource{
-				Source: encodeDataURLPtr(fmt.Sprintf(subUID, usrName)),
+			FileEmbedded1: FileEmbedded1{
+				Append: nil,
+				Contents: Resource{
+					Source: encodeDataURLPtr(fmt.Sprintf(subUID, usrName)),
+				},
+				Mode: intToPtr(0744),
 			},
-			Mode: intToPtr(0744),
-		},
-	})
+		})
+	}
 
 	// Set delegate.conf so cpu,io subsystem is delegated to non-root users as well for cgroupv2
 	// by default

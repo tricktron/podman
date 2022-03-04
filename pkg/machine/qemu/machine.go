@@ -479,7 +479,17 @@ func (v *MachineVM) Start(name string, _ machine.StartOptions) error {
 	for _, mount := range v.Mounts {
 		fmt.Printf("Mounting volume... %s:%s\n", mount.Source, mount.Target)
 		// create mountpoint directory if it doesn't exist
-		err = v.SSH(name, machine.SSHOptions{Args: []string{"-q", "--", "sudo", "mkdir", "-p", mount.Target}})
+		// because / is immutable, we have to monkey around with permissions
+		// if we dont mount in /home or /mnt
+		args := []string{"-q", "--"}
+		if !strings.HasPrefix(mount.Target, "/home") || !strings.HasPrefix(mount.Target, "/mnt") {
+			args = append(args, "sudo", "chattr", "-i", "/", ";")
+		}
+		args = append(args, "sudo", "mkdir", "-p", mount.Target)
+		if !strings.HasPrefix(mount.Target, "/home") || !strings.HasPrefix(mount.Target, "/mnt") {
+			args = append(args, ";", "sudo", "chattr", "+i", "/", ";")
+		}
+		err = v.SSH(name, machine.SSHOptions{Args: args})
 		if err != nil {
 			return err
 		}
