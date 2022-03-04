@@ -51,6 +51,7 @@ type DynamicIgnition struct {
 	Name      string
 	Key       string
 	TimeZone  string
+	UID       int
 	VMName    string
 	WritePath string
 }
@@ -63,12 +64,13 @@ func NewIgnitionFile(ign DynamicIgnition) error {
 	ignVersion := Ignition{
 		Version: "3.2.0",
 	}
-
 	ignPassword := Passwd{
 		Users: []PasswdUser{
 			{
 				Name:              ign.Name,
 				SSHAuthorizedKeys: []SSHAuthorizedKey{SSHAuthorizedKey(ign.Key)},
+				// Set the UID of the core user inside the machine
+				UID: intToPtr(ign.UID),
 			},
 			{
 				Name:              "root",
@@ -310,6 +312,7 @@ machine_enabled=true
 	delegateConf := `[Service]
 Delegate=memory pids cpu io
 `
+	subUID := `%s:100000:65536`
 
 	// Add a fake systemd service to get the user socket rolling
 	files = append(files, File{
@@ -339,6 +342,40 @@ Delegate=memory pids cpu io
 			Append: nil,
 			Contents: Resource{
 				Source: encodeDataURLPtr(containers),
+			},
+			Mode: intToPtr(0744),
+		},
+	})
+
+	// Setup /etc/subuid
+	files = append(files, File{
+		Node: Node{
+			Group:     getNodeGrp("root"),
+			Path:      "/etc/subuid",
+			User:      getNodeUsr("root"),
+			Overwrite: boolToPtr(true),
+		},
+		FileEmbedded1: FileEmbedded1{
+			Append: nil,
+			Contents: Resource{
+				Source: encodeDataURLPtr(fmt.Sprintf(subUID, usrName)),
+			},
+			Mode: intToPtr(0744),
+		},
+	})
+
+	// Setup /etc/subgid
+	files = append(files, File{
+		Node: Node{
+			Group:     getNodeGrp("root"),
+			Path:      "/etc/subgid",
+			User:      getNodeUsr("root"),
+			Overwrite: boolToPtr(true),
+		},
+		FileEmbedded1: FileEmbedded1{
+			Append: nil,
+			Contents: Resource{
+				Source: encodeDataURLPtr(fmt.Sprintf(subUID, usrName)),
 			},
 			Mode: intToPtr(0744),
 		},
