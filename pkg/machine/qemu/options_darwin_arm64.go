@@ -45,7 +45,6 @@ func getOvmfDir(imagePath, vmName string) string {
  */
 func getEdk2CodeFd(name string) string {
 	dirs := []string{
-		"/opt/homebrew/opt/podman/libexec/share/qemu",
 		"/usr/local/share/qemu",
 		"/opt/homebrew/share/qemu",
 	}
