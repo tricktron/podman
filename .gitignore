@@ -40,3 +40,5 @@ result
 /*runner_stats.log
 .install.goimports
 .generate-bindings
+.direnv
+.envrc
