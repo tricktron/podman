@@ -1,4 +1,5 @@
-//+build darwin
+//go:build darwin
+// +build darwin
 
 package util
 
@@ -10,6 +11,6 @@ func GetContainerPidInformationDescriptors() ([]string, error) {
 	return []string{}, errors.New("this function is not supported on darwin")
 }
 
-func GetSrcMountPath(absolutePath string) (string) {
+func GetSrcMountPath(absolutePath string) string {
 	return "/mnt" + absolutePath
 }

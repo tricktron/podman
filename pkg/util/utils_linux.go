@@ -17,7 +17,7 @@ func GetContainerPidInformationDescriptors() ([]string, error) {
 	return psgo.ListDescriptors(), nil
 }
 
-func GetSrcMountPath(absolutePath string) (string) {
+func GetSrcMountPath(absolutePath string) string {
 	return absolutePath
 }
 
